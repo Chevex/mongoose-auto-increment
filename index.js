@@ -14,11 +14,12 @@ exports.initialize = function (connection) {
             counterSchema = new mongoose.Schema({
                 model: { type: String, require: true },
                 field: { type: String, require: true },
-                count: { type: Number, default: 0 }
+                count: { type: Number, default: 0 },
+                filter: { type: mongoose.Schema.Types.Mixed }
             });
 
-            // Create a unique index using the "field" and "model" fields.
-            counterSchema.index({ field: 1, model: 1 }, { unique: true, required: true, index: -1 });
+            // Create a unique index using the "field" and "model" and "filter" fields.
+            counterSchema.index({ field: 1, model: 1, filter: 1 }, { unique: true, required: true, index: -1 });
 
             // Create model using new schema.
             IdentityCounter = connection.model('IdentityCounter', counterSchema);
@@ -40,7 +41,8 @@ exports.plugin = function (schema, options) {
             model: null, // The model to configure the plugin for.
             field: '_id', // The field the plugin should track.
             startAt: 0, // The number the count should start at.
-            incrementBy: 1 // The number by which to increment the count each time.
+            incrementBy: 1, // The number by which to increment the count each time.
+            filter: null // The field the plugin should filter by
         },
         fields = {}, // A hash of fields to add properties to in Mongoose.
         ready = false; // True if the counter collection has been updated and the document is ready to be saved.
@@ -56,12 +58,17 @@ exports.plugin = function (schema, options) {
             break;
     }
 
+    if (settings.filter && settings.field == '_id') {
+        throw new Error("mongoose-auto-increment cannot individually increment default field _id");
+    }
+
     // Add properties for field in schema.
     fields[settings.field] = {
         type: Number,
-        unique: true,
+        unique: !settings.filter,
         require: true
     };
+
     schema.add(fields);
 
     // Find the counter for this model and the relevant field.
@@ -120,15 +127,20 @@ exports.plugin = function (schema, options) {
         // last generated document ID was.
         if (typeof(doc[settings.field]) !== 'number') {
             // Declare self-invoking save function.
+
             (function save() {
                 // If ready, run increment logic.
                 // Note: ready is true when an existing counter collection is found or after it is created for the
                 // first time.
                 if (ready) {
+                    // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
+                    var search = { model: settings.model, field: settings.field };
+                    if (settings.filter)
+                        search.filter = doc[settings.filter];
+
                     // Find the counter collection entry for this model and field and update it.
                     IdentityCounter.findOneAndUpdate(
-                        // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
-                        { model: settings.model, field: settings.field },
+                        search,
                         // Increment the count by `incrementBy`.
                         { $inc: { count: settings.incrementBy } },
                         // new:true specifies that the callback should get the counter AFTER it is updated (incremented).
@@ -136,6 +148,13 @@ exports.plugin = function (schema, options) {
                         // Receive the updated counter.
                         function (err, updatedIdentityCounter) {
                             if (err) return next(err);
+                            if (!updatedIdentityCounter) {
+                                var counter = new IdentityCounter({ model: settings.model, field: settings.field, filter: search.filter, count: settings.startAt - settings.incrementBy });
+                                counter.save(function () {
+                                    setTimeout(save, 5);
+                                });
+                                return;
+                            }
                             // If there are no errors then go ahead and set the document's field to the current count.
                             doc[settings.field] = updatedIdentityCounter.count;
                             // Continue with default document save functionality.

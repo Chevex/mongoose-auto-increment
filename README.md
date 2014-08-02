@@ -130,3 +130,15 @@ book.save(function (err) {
 
 });
 ````
+
+### Want to autoincrement field individually per filter field
+
+````js
+bookSchema.plugin(autoIncrement.plugin, {
+    model: 'Book',
+    field: 'bookId',
+    filter: 'author'
+});
+````
+
+Each author will have individual counter for his book 
