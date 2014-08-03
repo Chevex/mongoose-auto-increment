@@ -103,7 +103,7 @@ exports.plugin = function (schema, options) {
 
     // Declare a function to reset counter at the start value - increment value.
     var resetCount = function (callback) {
-        IdentityCounter.findOneAndUpdate(
+        IdentityCounter.update(
             { model: settings.model, field: settings.field },
             { count: settings.startAt - settings.incrementBy },
             { new: true }, // new: true specifies that the callback should get the updated counter.
