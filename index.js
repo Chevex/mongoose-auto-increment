@@ -1,11 +1,15 @@
 // Module Scope
 var mongoose = require('mongoose'),
     extend = require('extend'),
+    async = require('async'),
     counterSchema,
     IdentityCounter;
 
+var mongooseConnection;
+
 // Initialize plugin by creating counter collection in database.
 exports.initialize = function (connection) {
+    mongooseConnection = connection;
     try {
         IdentityCounter = connection.model('IdentityCounter');
     } catch (ex) {
@@ -88,11 +92,24 @@ exports.plugin = function (schema, options) {
     );
 
     // Declare a function to get the next counter for the model/schema.
-    var nextCount = function (callback) {
-        IdentityCounter.findOne({
+    var nextCount = function (field, filter, callback) {
+        var search = {
             model: settings.model,
             field: settings.field
-        }, function (err, counter) {
+        };
+
+        if (typeof(field) == 'function') {
+            callback = field;
+        } else {
+            search.field = field;
+            if (typeof(filter) == 'function') {
+                callback = filter;
+            } else {
+                search.filter = filter;
+            }
+        }
+
+        IdentityCounter.findOne(search, function (err, counter) {
             if (err) return callback(err);
             callback(null, counter === null ? settings.startAt : counter.count + settings.incrementBy);
         });
@@ -102,11 +119,16 @@ exports.plugin = function (schema, options) {
     schema.static('nextCount', nextCount);
 
     // Declare a function to reset counter at the start value - increment value.
-    var resetCount = function (callback) {
+    var resetCount = function (field, callback) {
+        if (typeof(field) == 'function') {
+            callback = field;
+            field = settings.field;
+        }
+
         IdentityCounter.update(
-            { model: settings.model, field: settings.field },
+            { model: settings.model, field: field },
             { count: settings.startAt - settings.incrementBy },
-            { multi: true }, // new: true specifies that the callback should get the updated counter.
+            { multi: true },
             function (err) {
                 if (err) return callback(err);
                 callback(null, settings.startAt);
@@ -116,6 +138,37 @@ exports.plugin = function (schema, options) {
     // Add resetCount as both a method on documents and a static on the schema for convenience.
     schema.method('resetCount', resetCount);
     schema.static('resetCount', resetCount);
+
+    // Declare function to recount counter field from start value
+    var recount = function(field, callback) {
+        if (settings.field == field) {
+            resetCount(field, function() {
+                var sort = {};
+                sort[field] = 'asc';
+                mongooseConnection.model(settings.model).find({}).sort(sort).exec(function(err, docs) {
+                    if (err) callback(err);
+                    async.mapSeries(docs, function(doc, cb) {
+                        doc[field] = undefined;
+                        doc.save(cb);
+                    }, callback);
+                });
+            });
+        } else
+            callback();
+    };
+
+    // detect case 2 counter field in 1 model
+    var recountFn = schema.statics['recount'];
+    if (recountFn) {
+        schema.static('recount', function (field, done) {
+            recountFn(field, function (err) {
+                if (err) return done(err);
+                recount(field, done)
+            })
+        });
+    } else {
+        schema.static('recount', recount);
+    }
 
     // Every time documents in this schema are saved, run this logic.
     schema.pre('save', function (next) {

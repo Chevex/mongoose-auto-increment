@@ -319,6 +319,112 @@ describe('mongoose-auto-increment', function () {
             }
 
         });
+    });
 
+    describe('helper functions per counter', function (){
+        it('recount should refresh counter field based on previous values', function (done) {
+            // Arrange
+            var userSchema = new mongoose.Schema({
+                userId: Number,
+                name: String,
+                dept: String
+            });
+
+            userSchema.plugin(autoIncrement.plugin, {model: 'User', field: 'userId'});
+            var User = conn.model('User', userSchema),
+                user1 = new User({ name: 'Charlie', dept: 'Support', userId: 10}),
+                user2 = new User({ name: 'Charlene', dept: 'Marketing', userId: 5 });
+
+            // Act
+            async.series({
+                user1: function (cb) {
+                    user1.save(cb);
+                },
+                user2: function (cb) {
+                    user2.save(cb);
+                },
+                recount: function (cb) {
+                    User.recount('userId', cb);
+                },
+                user1AfterRecount: function (cb) {
+                    User.findById(user1._id, cb);
+                },
+                user2AfterRecount: function (cb) {
+                    User.findById(user2._id, cb);
+                }
+            }, assert);
+
+            // Assert
+            function assert(err, results) {
+                should.not.exist(err);
+                results.user1[0].should.have.property('userId', 10);
+                results.user2[0].should.have.property('userId', 5);
+                results.user1AfterRecount.should.have.property('userId', 1);
+                results.user2AfterRecount.should.have.property('userId', 0);
+                done();
+            }
+        });
+
+        it('helper functions should right work with more then 1 counter field', function (done) {
+            // Arrange
+            var userSchema = new mongoose.Schema({
+                userId: Number,
+                userIdDept: Number,
+                name: String,
+                dept: String
+            });
+
+            userSchema.plugin(autoIncrement.plugin, {model: 'User', field: 'userId'});
+            userSchema.plugin(autoIncrement.plugin, {model: 'User', field: 'userIdDept', filter: 'dept', startAt: 1});
+            var User = conn.model('User', userSchema),
+                user1 = new User({ name: 'Charlie', dept: 'Support', userId: 10, userIdDept: 5}),
+                user2 = new User({ name: 'Charlene', dept: 'Marketing', userId: 5, userIdDept: 10 });
+
+            // Act
+            async.series({
+                user1: function (cb) {
+                    user1.save(cb);
+                },
+                user2: function (cb) {
+                    user2.save(cb);
+                },
+                recount: function (cb) {
+                    User.recount('userId', cb);
+                },
+                recount2: function (cb) {
+                    User.recount('userIdDept', cb);
+                },
+                user1AfterRecount: function (cb) {
+                    User.findById(user1._id, cb);
+                },
+                user2AfterRecount: function (cb) {
+                    User.findById(user2._id, cb);
+                },
+                userIdNextCount: function (cb) {
+                    User.nextCount('userId', cb);
+                },
+                userIdDeptNextCount: function (cb) {
+                    User.nextCount('userIdDept', 'Support', cb);
+                }
+            }, assert);
+
+            // Assert
+            function assert(err, results) {
+                should.not.exist(err);
+                results.user1[0].should.have.property('userId', 10);
+                results.user2[0].should.have.property('userId', 5);
+                results.user1[0].should.have.property('userIdDept', 5);
+                results.user2[0].should.have.property('userIdDept', 10);
+
+                results.user1AfterRecount.should.have.property('userId', 1);
+                results.user2AfterRecount.should.have.property('userId', 0);
+                results.user1AfterRecount.should.have.property('userIdDept', 1);
+                results.user2AfterRecount.should.have.property('userIdDept', 1);
+
+                results.userIdNextCount.should.equal(2);
+                results.userIdDeptNextCount.should.equal(2);
+                done();
+            }
+        });
     });
 });
