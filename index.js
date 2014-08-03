@@ -106,7 +106,7 @@ exports.plugin = function (schema, options) {
         IdentityCounter.update(
             { model: settings.model, field: settings.field },
             { count: settings.startAt - settings.incrementBy },
-            { new: true }, // new: true specifies that the callback should get the updated counter.
+            { multi: true }, // new: true specifies that the callback should get the updated counter.
             function (err) {
                 if (err) return callback(err);
                 callback(null, settings.startAt);
