@@ -60,6 +60,7 @@ exports.plugin = function (schema, options) {
     fields[settings.field] = {
         type: Number,
         unique: true,
+        sparse: settings.sparseIndex,
         require: true
     };
     schema.add(fields);
