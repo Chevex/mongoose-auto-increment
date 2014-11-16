@@ -158,6 +158,42 @@ describe('mongoose-auto-increment', function () {
 
     });
 
+    it('should increment individual per filter field (Test 6)', function (done) {
+
+        // Arrange
+        var userSchema = new mongoose.Schema({
+            name: String,
+            dept: String
+        });
+        userSchema.plugin(autoIncrement.plugin, { model: 'User', filter: 'dept', field: 'userId'});
+        var User = conn.model('User', userSchema),
+            user1 = new User({ name: 'Charlie', dept: 'Support'}),
+            user2 = new User({ name: 'Charlene', dept: 'Marketing' }),
+            user3 = new User({ name: 'Charlito', dept: 'Marketing' });
+
+        // Act
+        async.series({
+            user1: function (cb) {
+                user1.save(cb);
+            },
+            user2: function (cb) {
+                user2.save(cb);
+            },
+            user3: function (cb) {
+                user3.save(cb);
+            }
+        }, assert);
+
+        // Assert
+        function assert(err, results) {
+            should.not.exist(err);
+            results.user1[0].should.have.property('userId', 0);
+            results.user2[0].should.have.property('userId', 0);
+            results.user3[0].should.have.property('userId', 1);
+            done();
+        }
+    });
+
     describe('helper function', function () {
 
         it('nextCount should return the next count for the model and field (Test 5)', function (done) {
@@ -170,7 +206,7 @@ describe('mongoose-auto-increment', function () {
             userSchema.plugin(autoIncrement.plugin, 'User');
             var User = conn.model('User', userSchema),
                 user1 = new User({ name: 'Charlie', dept: 'Support' }),
-                user2 = new User({ name: 'Charlene', dept: 'Marketing' });;
+                user2 = new User({ name: 'Charlene', dept: 'Marketing' });
 
             // Act
             async.series({
@@ -238,6 +274,47 @@ describe('mongoose-auto-increment', function () {
                 results.count1.should.equal(1);
                 results.reset.should.equal(0);
                 results.count2.should.equal(0);
+                done();
+            }
+
+        });
+
+        it('resetCount should work for filters increment', function (done) {
+
+            // Arrange
+            var userSchema = new mongoose.Schema({
+                name: String,
+                dept: String
+            });
+            userSchema.plugin(autoIncrement.plugin, {model: 'User', filter: 'dept', field: 'userId'});
+            var User = conn.model('User', userSchema),
+                user1 = new User({ name: 'Charlie', dept: 'Support'}),
+                user2 = new User({ name: 'Charlene', dept: 'Marketing' }),
+                user3 = new User({ name: 'Charlito', dept: 'Marketing' });
+
+            // Act
+            async.series({
+                user1: function (cb) {
+                    user1.save(cb);
+                },
+                user2: function (cb) {
+                    user2.save(cb);
+                },
+                reset: function (cb) {
+                    User.resetCount(cb);
+                },
+                user3: function (cb) {
+                    user3.save(cb);
+                }
+            }, assert);
+
+            // Assert
+            function assert(err, results) {
+                should.not.exist(err);
+                results.user1[0].should.have.property('userId', 0);
+                results.user2[0].should.have.property('userId', 0);
+                results.reset.should.equal(0);
+                results.user3[0].should.have.property('userId', 0);
                 done();
             }
 
