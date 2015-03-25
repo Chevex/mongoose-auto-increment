@@ -56,14 +56,17 @@ exports.plugin = function (schema, options) {
       extend(settings, options);
     break;
   }
-
+  
   // Add properties for field in schema.
-  fields[settings.field] = {
-    type: Number,
-    unique: settings.unique,
-    require: true
-  };
-  schema.add(fields);
+  if (!schema.paths[settings.field]) {
+    fields[settings.field] = {
+      type: Number,
+      require: true
+    };
+    if (settings.field !== '_id')
+      fields[settings.field].unique = settings.unique,
+    schema.add(fields);
+  }
 
   // Find the counter for this model and the relevant field.
   IdentityCounter.findOne(
