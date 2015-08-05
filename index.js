@@ -62,9 +62,11 @@ exports.plugin = function (schema, options) {
   if (settings.model == null)
     throw new Error("model must be set");
 
+  var fieldTypeString = !!(settings.prefix || settings.suffix);
+
   // Add properties for field in schema.
   fields[settings.field] = {
-    type: Number,
+    type: fieldTypeString ? String : Number,
     require: true
   };
   if (settings.field !== '_id')
@@ -89,7 +91,10 @@ exports.plugin = function (schema, options) {
   );
 
   var generateId = function(count) {
-    return settings.prefix + count + settings.suffix;
+    if (fieldTypeString) {
+      return settings.prefix + count + settings.suffix;
+    }
+    return count;
   };
 
   // Declare a function to get the next counter for the model/schema.
@@ -99,7 +104,6 @@ exports.plugin = function (schema, options) {
       field: settings.field
     }, function (err, counter) {
       if (err) return callback(err);
-      //callback(null, counter === null ? settings.startAt : counter.count + settings.incrementBy);
       callback(null, generateId(counter === null ? settings.startAt : counter.count + settings.incrementBy));
     });
   };
@@ -164,7 +168,7 @@ exports.plugin = function (schema, options) {
               function (err, updatedIdentityCounter) {
                 if (err) return next(err);
                 // If there are no errors then go ahead and set the document's field to the current count.
-                doc[settings.field] = updatedIdentityCounter.count;
+                doc[settings.field] = generateId(updatedIdentityCounter.count);
                 // Continue with default document save functionality.
                 next();
               }
