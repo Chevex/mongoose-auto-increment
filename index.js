@@ -41,7 +41,9 @@ exports.plugin = function (schema, options) {
     field: '_id', // The field the plugin should track.
     startAt: 0, // The number the count should start at.
     incrementBy: 1, // The number by which to increment the count each time.
-    unique: true // Should we create a unique index for the field
+    unique: true, // Should we create a unique index for the field
+    prefix: '', // prefix of id
+    suffix: '' // suffix of id
   },
   fields = {}, // A hash of fields to add properties to in Mongoose.
   ready = false; // True if the counter collection has been updated and the document is ready to be saved.
@@ -86,6 +88,10 @@ exports.plugin = function (schema, options) {
     }
   );
 
+  var generateId = function(count) {
+    return settings.prefix + count + settings.suffix;
+  };
+
   // Declare a function to get the next counter for the model/schema.
   var nextCount = function (callback) {
     IdentityCounter.findOne({
@@ -93,7 +99,8 @@ exports.plugin = function (schema, options) {
       field: settings.field
     }, function (err, counter) {
       if (err) return callback(err);
-      callback(null, counter === null ? settings.startAt : counter.count + settings.incrementBy);
+      //callback(null, counter === null ? settings.startAt : counter.count + settings.incrementBy);
+      callback(null, generateId(counter === null ? settings.startAt : counter.count + settings.incrementBy));
     });
   };
   // Add nextCount as both a method on documents and a static on the schema for convenience.
@@ -108,7 +115,7 @@ exports.plugin = function (schema, options) {
       { new: true }, // new: true specifies that the callback should get the updated counter.
       function (err) {
         if (err) return callback(err);
-        callback(null, settings.startAt);
+        callback(null,  generateId(settings.startAt));
       }
     );
   };
