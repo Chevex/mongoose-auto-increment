@@ -62,6 +62,10 @@ exports.plugin = function (schema, options) {
   if (settings.model == null)
     throw new Error("model must be set");
 
+  // Force convert to string
+  settings.prefix += '';
+  settings.suffix += '';
+
   var fieldTypeString = !!(settings.prefix || settings.suffix);
 
   // Add properties for field in schema.
