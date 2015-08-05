@@ -72,7 +72,7 @@ bookSchema.plugin(autoIncrement.plugin, {
     suffix: ''
 });
 ````
-Your first book document would have a `bookId` equal to `book_<count>`.
+Your book document would have a `bookId` equal to `book_<count>`.
 
 ### Want that field to start at a different number than zero or increment by more than one?
 
