@@ -63,6 +63,17 @@ authorSchema.plugin(autoIncrement.plugin, 'Author');
 bookSchema.plugin(autoIncrement.plugin, { model: 'Book', field: 'bookId' });
 ````
 
+### Want to have prefix or/and suffix in your id?
+````js
+bookSchema.plugin(autoIncrement.plugin, {
+    model: 'Book',
+    field: 'bookId',
+    prefix: 'book_',
+    suffix: ''
+});
+````
+Your book document would have a `bookId` equal to `book_<count>`.
+
 ### Want that field to start at a different number than zero or increment by more than one?
 
 ````js
