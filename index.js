@@ -122,8 +122,8 @@ exports.plugin = function (schema, options) {
     // Get reference to the document being saved.
     var doc = this;
 
-    // Only to this if no skipBy field is defined or the field is false
-    if (settings.skipBy == null || !doc[settings.skipBy]) {
+    // Only do this if no skipBy field is defined or the field is false
+    if (settings.skipBy === null || !doc[settings.skipBy]) {
       // Only do this if it is a new document (see http://mongoosejs.com/docs/api.html#document_Document-isNew)
       if (doc.isNew) {
         // Declare self-invoking save function.
@@ -178,7 +178,7 @@ exports.plugin = function (schema, options) {
       else
         next();
     } 
-    // If a skipBy field is defined AND it is true, tjen just continue the save without any increment logic.
+    // If a skipBy field is defined AND it is true, then just continue the save without any increment logic.
     else
       next();
   });
