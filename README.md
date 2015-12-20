@@ -33,7 +33,7 @@ var bookSchema = new Schema({
     title: String,
     genre: String,
     publishDate: Date,
-    dummy: {type: Boolean, default: false}
+    dummy: Boolean
 });
 
 bookSchema.plugin(autoIncrement.plugin, 'Book');
@@ -146,5 +146,5 @@ var Book = connection.model('Book', bookSchema),
 ````
 The whole logic will be skipped for this document because we told the plugin to skip the auto increment logic by the value of the documents field ***dummy***.
 
-* false => the logic will be executed
+* false or null => the logic will be executed
 * true => the logic will be skipped
