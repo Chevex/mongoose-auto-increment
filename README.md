@@ -32,7 +32,8 @@ var bookSchema = new Schema({
     author: { type: Schema.Types.ObjectId, ref: 'Author' },
     title: String,
     genre: String,
-    publishDate: Date
+    publishDate: Date,
+    dummy: Boolean
 });
 
 bookSchema.plugin(autoIncrement.plugin, 'Book');
@@ -130,3 +131,20 @@ book.save(function (err) {
 
 });
 ````
+
+### Want to skip the auto increment logic for specific documents?
+
+````js
+bookSchema.plugin(autoIncrement.plugin, {
+    model: 'Book',
+    field: 'bookId',
+    skipBy: 'dummy'
+});
+
+var Book = connection.model('Book', bookSchema),
+    book = new Book({dummy: true});
+````
+The whole logic will be skipped for this document because we told the plugin to skip the auto increment logic by the value of the documents field ***dummy***.
+
+* false or null => the logic will be executed
+* true => the logic will be skipped
