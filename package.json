@@ -62,5 +62,6 @@
   },
   "bugs": {
     "url": "https://github.com/codetunnel/mongoose-auto-increment/issues"
-  }
+  },
+  "license": "MIT"
 }
