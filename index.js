@@ -1,8 +1,9 @@
 // Module Scope
 var mongoose = require('mongoose'),
-extend = require('extend'),
-counterSchema,
-IdentityCounter;
+  extend = require('extend'),
+  Q = require('q'),
+  counterSchema,
+  IdentityCounter;
 
 // Initialize plugin by creating counter collection in database.
 exports.initialize = function (connection) {
@@ -41,20 +42,21 @@ exports.plugin = function (schema, options) {
     field: '_id', // The field the plugin should track.
     startAt: 0, // The number the count should start at.
     incrementBy: 1, // The number by which to increment the count each time.
-    unique: true // Should we create a unique index for the field
+    unique: true, // Should we create a unique index for the field
+    autoSet: true
   },
-  fields = {}, // A hash of fields to add properties to in Mongoose.
-  ready = false; // True if the counter collection has been updated and the document is ready to be saved.
+    fields = {}, // A hash of fields to add properties to in Mongoose.
+    ready = false; // True if the counter collection has been updated and the document is ready to be saved.
 
-  switch (typeof(options)) {
+  switch (typeof (options)) {
     // If string, the user chose to pass in just the model name.
     case 'string':
       settings.model = options;
-    break;
+      break;
     // If object, the user passed in a hash of options.
     case 'object':
       extend(settings, options);
-    break;
+      break;
   }
 
   if (settings.model == null)
@@ -88,13 +90,27 @@ exports.plugin = function (schema, options) {
 
   // Declare a function to get the next counter for the model/schema.
   var nextCount = function (callback) {
+    //Create a deferred to return a promise
+    var deferred = Q.defer();
+    //Make the callback optional
+    callback = callback || function () { };
+
     IdentityCounter.findOne({
       model: settings.model,
       field: settings.field
     }, function (err, counter) {
-      if (err) return callback(err);
-      callback(null, counter === null ? settings.startAt : counter.count + settings.incrementBy);
+      if (err) {
+          deferred.reject(err);
+          callback(err);
+          return;
+      }
+      var count = counter === null ? settings.startAt : counter.count + settings.incrementBy
+      deferred.resolve(count);
+      callback(null, count);
     });
+    
+    // 
+    return deferred.promise;
   };
   // Add nextCount as both a method on documents and a static on the schema for convenience.
   schema.method('nextCount', nextCount);
@@ -102,22 +118,71 @@ exports.plugin = function (schema, options) {
 
   // Declare a function to reset counter at the start value - increment value.
   var resetCount = function (callback) {
+    //Create a deferred to return a promise
+    var deferred = Q.defer();
+    //Make the callback optional
+    callback = callback || function () { };    
+    
     IdentityCounter.findOneAndUpdate(
       { model: settings.model, field: settings.field },
       { count: settings.startAt - settings.incrementBy },
       { new: true }, // new: true specifies that the callback should get the updated counter.
       function (err) {
-        if (err) return callback(err);
+        if (err) {
+          deferred.reject(err);
+          callback(err);
+          
+          return;
+        }
+        deferred.resolve(settings.startAt);
         callback(null, settings.startAt);
       }
     );
+    
+    return deferred.promise;
   };
   // Add resetCount as both a method on documents and a static on the schema for convenience.
   schema.method('resetCount', resetCount);
   schema.static('resetCount', resetCount);
 
+  // Declare a function to retrieve and use the next counter for the model/schema.
+  var useNext = function (callback) {
+    //Create a deferred to return a promise
+    var deferred = Q.defer();
+    //Make the callback optional
+    callback = callback || function () { };        
+    
+    IdentityCounter.findOneAndUpdate(
+      // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
+      // Check also that count is less than field value.
+      { model: settings.model, field: settings.field },
+      // Change the count of the value found to the new field value.
+      { $inc: { count: settings.incrementBy } },
+      { new: true }, // new: true specifies that the callback should get the updated counter.
+      function (err, updatedIdentityCounter) {
+        if (err) {
+          callback(err);
+          deferred.reject(err);
+          
+          return;
+        }
+        
+        deferred.resolve(updatedIdentityCounter.count);
+        callback(null, updatedIdentityCounter.count);
+      }
+    );
+    
+    return deferred.promise;
+  };
+  // Add useNext as both a method on documents and a static on the schema for convenience.
+  schema.static('useNext', useNext);
+
   // Every time documents in this schema are saved, run this logic.
   schema.pre('save', function (next) {
+    if (!settings.autoSet) {
+      return next();
+    }
+
     // Get reference to the document being saved.
     var doc = this;
 
