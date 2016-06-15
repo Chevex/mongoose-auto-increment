@@ -166,8 +166,48 @@ describe('mongoose-auto-increment', function () {
 
   });
 
+  it('should not increment if the value is present in the document and would exceed maxExplicitValue', function (done) {
+
+    // Arrange
+    var userSchema = new mongoose.Schema({
+      name: String,
+      dept: String
+    });
+
+    (function() {
+      userSchema.plugin(autoIncrement.plugin);
+    }).should.throw(Error);
+
+    userSchema.plugin(autoIncrement.plugin, { model: 'User', maxExplicitValue: 1000000 });
+    var User = connection.model('User', userSchema),
+      user1 = new User({ name: 'Charlie', dept: 'Support', _id: 10 }),
+      user2 = new User({ name: 'Charlene', dept: 'Marketing', _id: 1000001 }),
+      user3 = new User({ name: 'Jack', dept: 'Marketing' });
+
+    // Act
+    async.series({
+      user1: function (cb) {
+        user1.save(cb);
+      },
+      user2: function (cb) {
+        user2.save(cb);
+      },
+      user3: function (cb) {
+        user3.save(cb);
+      }
+    }, assert);
 
 
+    // Assert
+    function assert(err, results) {
+      should.not.exist(err);
+      results.user1[0].should.have.property('_id', 10);
+      results.user2[0].should.have.property('_id', 1000001);
+      results.user3[0].should.have.property('_id', 11);
+      done();
+    }
+
+  });
 
   describe('helper function', function () {
 
@@ -181,7 +221,7 @@ describe('mongoose-auto-increment', function () {
       userSchema.plugin(autoIncrement.plugin, 'User');
       var User = connection.model('User', userSchema),
       user1 = new User({ name: 'Charlie', dept: 'Support' }),
-      user2 = new User({ name: 'Charlene', dept: 'Marketing' });;
+      user2 = new User({ name: 'Charlene', dept: 'Marketing' });
 
       // Act
       async.series({
