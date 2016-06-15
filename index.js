@@ -66,7 +66,7 @@ exports.plugin = function (schema, options) {
     require: true
   };
   if (settings.field !== '_id')
-    fields[settings.field].unique = settings.unique
+    fields[settings.field].unique = settings.unique;
   schema.add(fields);
 
   // Find the counter for this model and the relevant field.
@@ -132,6 +132,9 @@ exports.plugin = function (schema, options) {
           // check that a number has already been provided, and update the counter to that number if it is
           // greater than the current count
           if (typeof doc[settings.field] === 'number') {
+            if ('maxExplicitValue' in settings && doc[settings.field] > Number(settings.maxExplicitValue)) {
+              return next();
+            }
             IdentityCounter.findOneAndUpdate(
               // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
               // Check also that count is less than field value.
