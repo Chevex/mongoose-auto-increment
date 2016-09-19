@@ -175,4 +175,43 @@ exports.plugin = function (schema, options) {
     else
       next();
   });
+  schema.pre('findOneAndUpdate', function (next) {
+        // Get reference.
+        var doc = this;
+        if (!doc[settings.field]) {
+            if (typeof doc[settings.field] === 'number') {
+                IdentityCounter.findOneAndUpdate(
+                    // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
+                    // Check also that count is less than field value.
+                    { model: settings.model, field: settings.field, count: { $lt: doc[settings.field] } },
+                    // Change the count of the value found to the new field value.
+                    { count: doc[settings.field] },
+                    function (err) {
+                        if (err) return next(err);
+                        // Continue with default document findOneAndUpdate functionality.
+                        next();
+                    }
+                );
+            } else {
+                // Find the counter collection entry for this model and field and update it.
+                IdentityCounter.findOneAndUpdate(
+                    // IdentityCounter documents are identified by the model and field that the plugin was invoked for.
+                    { model: settings.model, field: settings.field },
+                    // Increment the count by `incrementBy`.
+                    { $inc: { count: settings.incrementBy } },
+                    // new:true specifies that the callback should get the counter AFTER it is updated (incremented).
+                    { new: true },
+                    // Receive the updated counter.
+                    function (err, updatedIdentityCounter) {
+                        if (err) return next(err);
+                        // If there are no errors then go ahead and set the document's field to the current count.
+                        doc[settings.field] = updatedIdentityCounter.count;
+                        // Continue with default document findOneAndUpdate functionality.
+                        next();
+                    }
+                );
+            }
+        } else
+            next();
+    });
 };
