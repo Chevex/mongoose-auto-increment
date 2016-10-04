@@ -152,7 +152,7 @@ exports.plugin = function (schema, options) {
               // Increment the count by `incrementBy`.
               { $inc: { count: settings.incrementBy } },
               // new:true specifies that the callback should get the counter AFTER it is updated (incremented).
-              { new: true },
+              { new: true, upsert: true },
               // Receive the updated counter.
               function (err, updatedIdentityCounter) {
                 if (err) return next(err);
