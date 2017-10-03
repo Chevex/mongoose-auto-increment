@@ -12,8 +12,8 @@ exports.initialize = function (connection) {
     if (ex.name === 'MissingSchemaError') {
       // Create new counter schema.
       counterSchema = new mongoose.Schema({
-        model: { type: String, require: true },
-        field: { type: String, require: true },
+        model: { type: String, required: true },
+        field: { type: String, required: true },
         count: { type: Number, default: 0 }
       });
 
@@ -63,7 +63,7 @@ exports.plugin = function (schema, options) {
   // Add properties for field in schema.
   fields[settings.field] = {
     type: Number,
-    require: true
+    required: true
   };
   if (settings.field !== '_id')
     fields[settings.field].unique = settings.unique
