@@ -18,7 +18,11 @@ exports.initialize = function (connection) {
       });
 
       // Create a unique index using the "field" and "model" fields.
-      counterSchema.index({ field: 1, model: 1 }, { unique: true, required: true, index: -1 });
+      // Bug fixed: 
+      // 1. Unhandled rejection MongoError: The field 'required' is not valid for an index specification.
+      // 2. Unhandled rejection MongoError: The field 'index' is not valid for an index specification.
+      // remove the "required" and "index" fields from options
+      counterSchema.index({ field: 1, model: 1 }, { unique: true});
 
       // Create model using new schema.
       IdentityCounter = connection.model('IdentityCounter', counterSchema);
