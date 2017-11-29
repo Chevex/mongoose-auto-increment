@@ -7,7 +7,7 @@ var async = require('async'),
 
 before(function (done) {
   mongoose.Promise = bluebird;
-  connection = mongoose.createConnection('mongodb://127.0.0.1/mongoose-auto-increment-test');
+  connection = mongoose.createConnection('mongodb://127.0.0.1/mongoose-ai-test');
   connection.on('error', console.error.bind(console));
   connection.once('open', function () {
     autoIncrement.initialize(connection);
@@ -29,7 +29,7 @@ afterEach(function (done) {
   });
 });
 
-describe('mongoose-auto-increment', function () {
+describe('mongoose-ai', function () {
 
   it('should increment the _id field on save', function (done) {
 
