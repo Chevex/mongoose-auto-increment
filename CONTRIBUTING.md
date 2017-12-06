@@ -1,6 +1,6 @@
 ## Submitting Issues
 
-If you experience any issues with this plugin please feel free to submit them to the [issue tracker](https://github.com/Chevex/mongoose-auto-increment/issues) for this project. One of the projects contributors will eventually take a look at it. Please be patient.
+If you experience any issues with this plugin please feel free to submit them to the [issue tracker](https://github.com/lvyue/mongoose-ai/issues) for this project. One of the projects contributors will eventually take a look at it. Please be patient.
 
 ## Guidelines
 
@@ -32,4 +32,4 @@ The source of this plugin is licensed using the MIT license.
 > IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 > CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-To contribute changes to this project please submit them as a [pull request](https://github.com/Chevex/mongoose-auto-increment/pulls). If you don't know how to submit a pull request then see [this article](https://help.github.com/articles/using-pull-requests).
+To contribute changes to this project please submit them as a [pull request](https://github.com/lvyue/mongoose-ai/pulls). If you don't know how to submit a pull request then see [this article](https://help.github.com/articles/using-pull-requests).

@@ -1,11 +1,13 @@
 var async = require('async'),
-should = require('chai').should(),
-mongoose = require('mongoose'),
-autoIncrement = require('..'),
-connection;
+  should = require('chai').should(),
+  mongoose = require('mongoose'),
+  autoIncrement = require('..'),
+  bluebird = require('bluebird'),
+  connection;
 
 before(function (done) {
-  connection = mongoose.createConnection('mongodb://127.0.0.1/mongoose-auto-increment-test');
+  mongoose.Promise = bluebird;
+  connection = mongoose.createConnection('mongodb://127.0.0.1/mongoose-ai-test');
   connection.on('error', console.error.bind(console));
   connection.once('open', function () {
     autoIncrement.initialize(connection);
@@ -27,7 +29,7 @@ afterEach(function (done) {
   });
 });
 
-describe('mongoose-auto-increment', function () {
+describe('mongoose-ai', function () {
 
   it('should increment the _id field on save', function (done) {
 
@@ -38,8 +40,14 @@ describe('mongoose-auto-increment', function () {
     });
     userSchema.plugin(autoIncrement.plugin, 'User');
     var User = connection.model('User', userSchema),
-    user1 = new User({ name: 'Charlie', dept: 'Support' }),
-    user2 = new User({ name: 'Charlene', dept: 'Marketing' });
+      user1 = new User({
+        name: 'Charlie',
+        dept: 'Support'
+      }),
+      user2 = new User({
+        name: 'Charlene',
+        dept: 'Marketing'
+      });
 
     // Act
     async.series({
@@ -61,17 +69,26 @@ describe('mongoose-auto-increment', function () {
 
   });
 
-  it('should increment the specified field instead (Test 2)', function(done) {
+  it('should increment the specified field instead (Test 2)', function (done) {
 
     // Arrange
     var userSchema = new mongoose.Schema({
       name: String,
       dept: String
     });
-    userSchema.plugin(autoIncrement.plugin, { model: 'User', field: 'userId' });
+    userSchema.plugin(autoIncrement.plugin, {
+      model: 'User',
+      field: 'userId'
+    });
     var User = connection.model('User', userSchema),
-    user1 = new User({ name: 'Charlie', dept: 'Support' }),
-    user2 = new User({ name: 'Charlene', dept: 'Marketing' });
+      user1 = new User({
+        name: 'Charlie',
+        dept: 'Support'
+      }),
+      user2 = new User({
+        name: 'Charlene',
+        dept: 'Marketing'
+      });
 
     // Act
     async.series({
@@ -101,10 +118,19 @@ describe('mongoose-auto-increment', function () {
       name: String,
       dept: String
     });
-    userSchema.plugin(autoIncrement.plugin, { model: 'User', startAt: 3 });
+    userSchema.plugin(autoIncrement.plugin, {
+      model: 'User',
+      startAt: 3
+    });
     var User = connection.model('User', userSchema),
-    user1 = new User({ name: 'Charlie', dept: 'Support' }),
-    user2 = new User({ name: 'Charlene', dept: 'Marketing' });
+      user1 = new User({
+        name: 'Charlie',
+        dept: 'Support'
+      }),
+      user2 = new User({
+        name: 'Charlene',
+        dept: 'Marketing'
+      });
 
     // Act
     async.series({
@@ -134,14 +160,23 @@ describe('mongoose-auto-increment', function () {
       dept: String
     });
 
-    (function() {
+    (function () {
       userSchema.plugin(autoIncrement.plugin);
     }).should.throw(Error);
 
-    userSchema.plugin(autoIncrement.plugin, { model: 'User', incrementBy: 5 });
+    userSchema.plugin(autoIncrement.plugin, {
+      model: 'User',
+      incrementBy: 5
+    });
     var User = connection.model('User', userSchema),
-    user1 = new User({ name: 'Charlie', dept: 'Support' }),
-    user2 = new User({ name: 'Charlene', dept: 'Marketing' });
+      user1 = new User({
+        name: 'Charlie',
+        dept: 'Support'
+      }),
+      user2 = new User({
+        name: 'Charlene',
+        dept: 'Marketing'
+      });
 
 
 
@@ -180,8 +215,14 @@ describe('mongoose-auto-increment', function () {
       });
       userSchema.plugin(autoIncrement.plugin, 'User');
       var User = connection.model('User', userSchema),
-      user1 = new User({ name: 'Charlie', dept: 'Support' }),
-      user2 = new User({ name: 'Charlene', dept: 'Marketing' });;
+        user1 = new User({
+          name: 'Charlie',
+          dept: 'Support'
+        }),
+        user2 = new User({
+          name: 'Charlene',
+          dept: 'Marketing'
+        });;
 
       // Act
       async.series({
@@ -224,7 +265,10 @@ describe('mongoose-auto-increment', function () {
       });
       userSchema.plugin(autoIncrement.plugin, 'User');
       var User = connection.model('User', userSchema),
-      user = new User({name: 'Charlie', dept: 'Support'});
+        user = new User({
+          name: 'Charlie',
+          dept: 'Support'
+        });
 
       // Act
       async.series({
