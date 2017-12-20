@@ -65,7 +65,7 @@ exports.plugin = function (schema, options) {
     type: Number,
     require: true
   };
-  if (settings.field !== '_id')
+  if (settings.field !== '_id' && settings.unique)
     fields[settings.field].unique = settings.unique;
   schema.add(fields);
 
