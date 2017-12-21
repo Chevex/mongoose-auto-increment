@@ -65,7 +65,8 @@ exports.plugin = function (schema, options) {
     type: Number,
     require: true
   };
-  if (settings.field !== '_id')
+  // if we assign .unique = false Mongoose will create a non-unique index
+  if (settings.field !== '_id' && settings.unique)
     fields[settings.field].unique = settings.unique;
   schema.add(fields);
 

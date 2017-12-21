@@ -209,6 +209,26 @@ describe('mongoose-auto-increment', function () {
 
   });
 
+  it('should not add a unique index if unique=false in options', function() {
+
+    // Arrange
+    var userSchema = new mongoose.Schema({
+      name: String,
+      dept: String
+    });
+    userSchema.plugin(autoIncrement.plugin, { model: 'User', field: 'userId', unique: false });
+    var User = connection.model('User', userSchema);
+
+    // Assert
+    userSchema.path('userId').options.should.not.have.property('unique');
+
+    return new User({ name: 'Charlie', dept: 'Support', userId: 10 }).save()
+      .then(() => User.collection.getIndexes())
+      .then((indexes) => {
+        Object.keys(indexes).should.eql(['_id_']);
+      });
+  });
+
   describe('helper function', function () {
 
     it('nextCount should return the next count for the model and field (Test 5)', function (done) {
