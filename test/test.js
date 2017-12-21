@@ -217,11 +217,16 @@ describe('mongoose-auto-increment', function () {
       dept: String
     });
     userSchema.plugin(autoIncrement.plugin, { model: 'User', field: 'userId', unique: false });
-    connection.model('User', userSchema);
+    var User = connection.model('User', userSchema);
 
     // Assert
     userSchema.path('userId').options.should.not.have.property('unique');
 
+    return new User({ name: 'Charlie', dept: 'Support', userId: 10 }).save()
+      .then(() => User.collection.getIndexes())
+      .then((indexes) => {
+        Object.keys(indexes).should.eql(['_id_']);
+      });
   });
 
   describe('helper function', function () {
