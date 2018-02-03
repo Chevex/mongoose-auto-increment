@@ -61,10 +61,10 @@ exports.plugin = function (schema, options) {
     throw new Error("model must be set");
 
   // Add properties for field in schema.
-  fields[settings.field] = {
+  fields[settings.field] = Object.assign({
     type: Number,
     require: true
-  };
+  }, schema.tree[settings.field]);
   if (settings.field !== '_id')
     fields[settings.field].unique = settings.unique
   schema.add(fields);
