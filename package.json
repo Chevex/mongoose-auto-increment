@@ -14,8 +14,7 @@
   },
   "devDependencies": {
     "async": "*",
-    "chai": "*",
-    "mocha": "*",
+    "jest": "23.6.0",
     "mongoose": "^4.1.12"
   },
   "keywords": [
@@ -58,7 +57,8 @@
     }
   ],
   "scripts": {
-    "test": "node_modules/mocha/bin/mocha"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "bugs": {
     "url": "https://github.com/codetunnel/mongoose-auto-increment/issues"

@@ -1,10 +1,10 @@
-var async = require('async'),
-should = require('chai').should(),
-mongoose = require('mongoose'),
-autoIncrement = require('..'),
-connection;
+const async = require('async');
+const mongoose = require('mongoose');
+const autoIncrement = require('..');
 
-before(function (done) {
+let connection;
+
+beforeAll(function (done) {
   connection = mongoose.createConnection('mongodb://127.0.0.1/mongoose-auto-increment-test');
   connection.on('error', console.error.bind(console));
   connection.once('open', function () {
@@ -13,7 +13,7 @@ before(function (done) {
   });
 });
 
-after(function (done) {
+afterAll(function (done) {
   connection.db.dropDatabase(function (err) {
     if (err) return done(err);
     connection.close(done);
@@ -53,9 +53,13 @@ describe('mongoose-auto-increment', function () {
 
     // Assert
     function assert(err, results) {
-      should.not.exist(err);
-      results.user1[0].should.have.property('_id', 0);
-      results.user2[0].should.have.property('_id', 1);
+      expect(err).toBe(null);
+      expect(results.user1[0]).toMatchObject({
+        _id: 0,
+      });
+      expect(results.user2[0]).toMatchObject({
+        _id: 1,
+      });
       done();
     }
 
@@ -85,9 +89,13 @@ describe('mongoose-auto-increment', function () {
 
     // Assert
     function assert(err, results) {
-      should.not.exist(err);
-      results.user1[0].should.have.property('userId', 0);
-      results.user2[0].should.have.property('userId', 1);
+      expect(err).toBe(null);
+      expect(results.user1[0]).toMatchObject({
+        userId: 0,
+      });
+      expect(results.user2[0]).toMatchObject({
+        userId: 1,
+      });
       done();
     }
 
@@ -118,9 +126,13 @@ describe('mongoose-auto-increment', function () {
 
     // Assert
     function assert(err, results) {
-      should.not.exist(err);
-      results.user1[0].should.have.property('_id', 3);
-      results.user2[0].should.have.property('_id', 4);
+      expect(err).toBe(null);
+      expect(results.user1[0]).toMatchObject({
+        _id: 3,
+      });
+      expect(results.user2[0]).toMatchObject({
+        _id: 4,
+      });
       done();
     }
 
@@ -134,16 +146,12 @@ describe('mongoose-auto-increment', function () {
       dept: String
     });
 
-    (function() {
-      userSchema.plugin(autoIncrement.plugin);
-    }).should.throw(Error);
+    expect(() => userSchema.plugin(autoIncrement.plugin)).toThrowError(Error);
 
     userSchema.plugin(autoIncrement.plugin, { model: 'User', incrementBy: 5 });
     var User = connection.model('User', userSchema),
     user1 = new User({ name: 'Charlie', dept: 'Support' }),
     user2 = new User({ name: 'Charlene', dept: 'Marketing' });
-
-
 
     // Act
     async.series({
@@ -158,9 +166,13 @@ describe('mongoose-auto-increment', function () {
 
     // Assert
     function assert(err, results) {
-      should.not.exist(err);
-      results.user1[0].should.have.property('_id', 0);
-      results.user2[0].should.have.property('_id', 5);
+      expect(err).toBe(null);
+      expect(results.user1[0]).toMatchObject({
+        _id: 0,
+      });
+      expect(results.user2[0]).toMatchObject({
+        _id: 5,
+      });
       done();
     }
 
@@ -174,9 +186,7 @@ describe('mongoose-auto-increment', function () {
       dept: String
     });
 
-    (function() {
-      userSchema.plugin(autoIncrement.plugin);
-    }).should.throw(Error);
+    expect(() => userSchema.plugin(autoIncrement.plugin)).toThrowError(Error);
 
     userSchema.plugin(autoIncrement.plugin, { model: 'User', maxExplicitValue: 1000000 });
     var User = connection.model('User', userSchema),
@@ -200,10 +210,16 @@ describe('mongoose-auto-increment', function () {
 
     // Assert
     function assert(err, results) {
-      should.not.exist(err);
-      results.user1[0].should.have.property('_id', 10);
-      results.user2[0].should.have.property('_id', 1000001);
-      results.user3[0].should.have.property('_id', 11);
+      expect(err).toBe(null);
+      expect(results.user1[0]).toMatchObject({
+        _id: 10,
+      });
+      expect(results.user2[0]).toMatchObject({
+        _id: 1000001,
+      });
+      expect(results.user3[0]).toMatchObject({
+        _id: 11,
+      });
       done();
     }
 
@@ -220,12 +236,12 @@ describe('mongoose-auto-increment', function () {
     var User = connection.model('User', userSchema);
 
     // Assert
-    userSchema.path('userId').options.should.not.have.property('unique');
+    expect(userSchema.path('userId').options.unique).toBe(undefined);
 
     return new User({ name: 'Charlie', dept: 'Support', userId: 10 }).save()
       .then(() => User.collection.getIndexes())
       .then((indexes) => {
-        Object.keys(indexes).should.eql(['_id_']);
+        expect(Object.keys(indexes)).toEqual(expect.arrayContaining(['_id_']));
       });
   });
 
@@ -264,12 +280,16 @@ describe('mongoose-auto-increment', function () {
 
       // Assert
       function assert(err, results) {
-        should.not.exist(err);
-        results.count1.should.equal(0);
-        results.user1[0].should.have.property('_id', 0);
-        results.count2.should.equal(1);
-        results.user2[0].should.have.property('_id', 1);
-        results.count3.should.equal(2);
+        expect(err).toBe(null);
+        expect(results.count1).toBe(0);
+        expect(results.count2).toBe(1);
+        expect(results.count3).toBe(2);
+        expect(results.user1[0]).toMatchObject({
+          _id: 0,
+        });
+        expect(results.user2[0]).toMatchObject({
+          _id: 1,
+        });
         done();
       }
 
@@ -304,11 +324,13 @@ describe('mongoose-auto-increment', function () {
 
       // Assert
       function assert(err, results) {
-        should.not.exist(err);
-        results.user[0].should.have.property('_id', 0);
-        results.count1.should.equal(1);
-        results.reset.should.equal(0);
-        results.count2.should.equal(0);
+        expect(err).toBe(null);
+        expect(results.user1[0]).toMatchObject({
+          _id: 0,
+        });
+        expect(results.count1).toBe(1);
+        expect(results.reset).toBe(0);
+        expect(results.count2).toBe(0);
         done();
       }
 
