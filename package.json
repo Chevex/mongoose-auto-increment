@@ -6,6 +6,12 @@
     "type": "git",
     "url": "git://github.com/codetunnel/mongoose-auto-increment.git"
   },
+  "scripts": {
+    "lint": "xo",
+    "lint:fix": "xo --fix",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
   "dependencies": {
     "extend": "^3.0.0"
   },
@@ -14,8 +20,11 @@
   },
   "devDependencies": {
     "async": "*",
+    "eslint": "5.10.0",
+    "eslint-config-airbnb": "17.1.0",
     "jest": "23.6.0",
-    "mongoose": "^4.1.12"
+    "mongoose": "^4.1.12",
+    "xo": "0.23.0"
   },
   "keywords": [
     "mongoose",
@@ -56,11 +65,25 @@
       "url": "https://github.com/tomaskavka"
     }
   ],
-  "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch"
-  },
   "bugs": {
     "url": "https://github.com/codetunnel/mongoose-auto-increment/issues"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "testEnvironment": "node"
+  },
+  "xo": {
+    "extends": "eslint-config-airbnb-base",
+    "globals": [
+      "afterAll",
+      "afterEach",
+      "beforeAll",
+      "beforeEach",
+      "describe",
+      "expect",
+      "it",
+      "jest"
+    ],
+    "space": true
   }
 }
