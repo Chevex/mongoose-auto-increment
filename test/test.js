@@ -162,6 +162,43 @@ describe('mongoose-auto-increment plugin', () => {
     });
   });
 
+  describe('when used in subdocument', () => {
+    let project1;
+    let project2;
+    let projectSchema;
+    let storeSchema;
+
+    beforeAll(async () => {
+      storeSchema = new mongoose.Schema({
+        name: String,
+      });
+      storeSchema.plugin(autoIncrement.plugin, { model: 'Store' });
+      mongoose.model('Store', storeSchema);
+
+      projectSchema = new mongoose.Schema({
+        name: String,
+        apple: storeSchema,
+        google: storeSchema,
+      });
+      const Project = mongoose.model('Project', projectSchema);
+
+      project1 = await new Project({ name: 'Cool project', apple: { name: 'Apple' }, google: { name: 'Google' } }).save();
+      project2 = await new Project({ name: 'Another Cool project' }).save();
+      project2.google = { name: 'Google' };
+      project2 = await project2.save();
+    });
+
+
+    it('increases counter when subdocument is created with the main document', async () => {
+      expect(project1.apple._id).toEqual(0);
+      expect(project1.google._id).toEqual(1);
+    });
+
+    it('increases counter when subdocument is created after main document', () => {
+      expect(project2.google._id).toEqual(2);
+    });
+  });
+
   describe('nextCount()', () => {
     let user1;
     let user2;
