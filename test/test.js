@@ -14,7 +14,7 @@ beforeAll((done) => {
 
 afterEach(async () => {
   await mongoose.connection.db.dropDatabase();
-  delete mongoose.connection.models['User'];
+  delete mongoose.connection.models.User;
 });
 
 afterAll(async () => {
@@ -29,7 +29,7 @@ describe('mongoose-auto-increment plugin', () => {
     });
     userSchema.plugin(autoIncrement.plugin, options);
     return mongoose.model(model, userSchema);
-  }
+  };
 
   describe('when not given a field', () => {
     let user1;
@@ -48,7 +48,31 @@ describe('mongoose-auto-increment plugin', () => {
     it('should increment the _id for the second user', () => {
       expect(user2._id).toBe(1);
     });
+  });
 
+  describe('when counter field also exists in schema', () => {
+    let user1;
+    let user2;
+
+    beforeEach(async () => {
+      const userSchema = new mongoose.Schema({
+        name: String,
+        dept: String,
+        userId: Number,
+      });
+      userSchema.plugin(autoIncrement.plugin, { model: 'User', field: 'userId' });
+      const User = mongoose.model('User', userSchema);
+      user1 = await new User({ name: 'Charlie', dept: 'Support' }).save();
+      user2 = await new User({ name: 'Charlie', dept: 'Support' }).save();
+    });
+
+    it('should set first user userId field on save', () => {
+      expect(user1.userId).toBe(0);
+    });
+
+    it('should set first user userId field on save', () => {
+      expect(user2.userId).toBe(1);
+    });
   });
 
   describe('when given a field', () => {
@@ -133,6 +157,19 @@ describe('mongoose-auto-increment plugin', () => {
     });
   });
 
+  describe('when unique setting is not passed in', () => {
+    let User;
+
+    beforeAll(async () => {
+      User = getModel('User', { model: 'User', field: 'userId' });
+      await new User({ name: 'Charlie', dept: 'Support', nonUniqueId: 10 }).save();
+    });
+
+    it('unique setting is passed to mongoose schema', () => {
+      expect(User.schema.path('userId').options.unique).toBe(true);
+    });
+  });
+
   describe('when unique is set to false in options', () => {
     let indices;
     let User;
@@ -179,8 +216,8 @@ describe('mongoose-auto-increment plugin', () => {
     });
 
     afterEach(() => {
-      delete mongoose.connection.models['Project'];
-      delete mongoose.connection.models['Store'];
+      delete mongoose.connection.models.Project;
+      delete mongoose.connection.models.Store;
     });
 
     it('increases counter when subdocument is created with the main document', () => {
