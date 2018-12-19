@@ -12,32 +12,43 @@ beforeAll((done) => {
   mongoose.connect('mongodb://127.0.0.1/mongoose-auto-increment-test', { useCreateIndex: true, useNewUrlParser: true });
 });
 
-afterAll(async () => {
+afterEach(async () => {
   await mongoose.connection.db.dropDatabase();
+  delete mongoose.connection.models['User'];
+});
+
+afterAll(async () => {
   await mongoose.disconnect();
 });
 
 describe('mongoose-auto-increment plugin', () => {
+  const getModel = (model, options) => {
+    const userSchema = new mongoose.Schema({
+      name: String,
+      dept: String,
+    });
+    userSchema.plugin(autoIncrement.plugin, options);
+    return mongoose.model(model, userSchema);
+  }
+
   describe('when not given a field', () => {
     let user1;
     let user2;
 
     beforeEach(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, 'UserNoField');
-      const User = mongoose.model('UserNoField', userSchema);
-
+      const User = getModel('User', 'User');
       user1 = await new User({ name: 'Charlie', dept: 'Support' }).save();
       user2 = await new User({ name: 'Charlene', dept: 'Marketing' }).save();
     });
 
-    it('should increment the _id field on save', () => {
+    it('should set first user _id field on save', () => {
       expect(user1._id).toBe(0);
+    });
+
+    it('should increment the _id for the second user', () => {
       expect(user2._id).toBe(1);
     });
+
   });
 
   describe('when given a field', () => {
@@ -45,19 +56,16 @@ describe('mongoose-auto-increment plugin', () => {
     let user2;
 
     beforeEach(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, { model: 'UserWithField', field: 'userId' });
-      const User = mongoose.model('UserWithField', userSchema);
-
+      const User = getModel('User', { model: 'User', field: 'userId' });
       user1 = await new User({ name: 'Charlie', dept: 'Support' }).save();
       user2 = await new User({ name: 'Charlene', dept: 'Marketing' }).save();
     });
 
-    it('increments the specified field instead of default', () => {
+    it('should set specified field instead of default for first user', () => {
       expect(user1.userId).toBe(0);
+    });
+
+    it('should the specified field for the second user', () => {
       expect(user2.userId).toBe(1);
     });
   });
@@ -67,19 +75,16 @@ describe('mongoose-auto-increment plugin', () => {
     let user2;
 
     beforeEach(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, { model: 'UserWithStartsAt', startAt: 3 });
-      const User = mongoose.model('UserWithStartsAt', userSchema);
-
+      const User = getModel('User', { model: 'User', startAt: 3 });
       user1 = await new User({ name: 'Charlie', dept: 'Support' }).save();
       user2 = await new User({ name: 'Charlene', dept: 'Marketing' }).save();
     });
 
-    it('starts incrementing from the given start value', () => {
+    it('uses the startAt value for the first user', () => {
       expect(user1._id).toBe(3);
+    });
+
+    it('uses the incremented startAt value for the second user', () => {
       expect(user2._id).toBe(4);
     });
   });
@@ -89,19 +94,16 @@ describe('mongoose-auto-increment plugin', () => {
     let user2;
 
     beforeEach(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, { model: 'UserIncrementBy', incrementBy: 5 });
-      const User = mongoose.model('UserIncrementBy', userSchema);
-
+      const User = getModel('User', { model: 'User', incrementBy: 5 });
       user1 = await new User({ name: 'Charlie', dept: 'Support' }).save();
       user2 = await new User({ name: 'Charlene', dept: 'Marketing' }).save();
     });
 
-    it('increments with the given value instead of default', () => {
+    it('uses the default value for the first user', () => {
       expect(user1._id).toBe(0);
+    });
+
+    it('uses the incrementBy to set the value for the second value', () => {
       expect(user2._id).toBe(5);
     });
   });
@@ -111,14 +113,8 @@ describe('mongoose-auto-increment plugin', () => {
     let user2;
     let user3;
 
-    beforeAll(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, { model: 'UserMaxExplicitValue', maxExplicitValue: 1000000 });
-      const User = mongoose.model('UserMaxExplicitValue', userSchema);
-
+    beforeEach(async () => {
+      const User = getModel('User', { model: 'User', maxExplicitValue: 1000000 });
       user1 = await new User({ name: 'Charlie', dept: 'Support', _id: 10 }).save();
       user2 = await new User({ name: 'Charlene', dept: 'Marketing', _id: 1000001 }).save();
       user3 = await new User({ name: 'Jack', dept: 'Marketing' }).save();
@@ -139,22 +135,16 @@ describe('mongoose-auto-increment plugin', () => {
 
   describe('when unique is set to false in options', () => {
     let indices;
-    let userSchema;
+    let User;
 
     beforeAll(async () => {
-      userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, { model: 'UserNonUnique', field: 'nonUniqueId', unique: false });
-      const User = mongoose.model('UserNonUnique', userSchema);
-
+      User = getModel('User', { model: 'User', field: 'nonUniqueId', unique: false });
       await new User({ name: 'Charlie', dept: 'Support', nonUniqueId: 10 }).save();
       indices = await User.collection.getIndexes();
     });
 
     it('unique setting is passed to mongoose schema', () => {
-      expect(userSchema.path('nonUniqueId').options.unique).toBe(undefined);
+      expect(User.schema.path('nonUniqueId').options.unique).toBe(undefined);
     });
 
     it('the counter field does not have an index', () => {
@@ -168,7 +158,7 @@ describe('mongoose-auto-increment plugin', () => {
     let projectSchema;
     let storeSchema;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       storeSchema = new mongoose.Schema({
         name: String,
       });
@@ -188,10 +178,13 @@ describe('mongoose-auto-increment plugin', () => {
       project2 = await project2.save();
     });
 
+    afterEach(() => {
+      delete mongoose.connection.models['Project'];
+      delete mongoose.connection.models['Store'];
+    });
 
-    it('increases counter when subdocument is created with the main document', async () => {
-      expect(project1.apple._id).toEqual(0);
-      expect(project1.google._id).toEqual(1);
+    it('increases counter when subdocument is created with the main document', () => {
+      expect([project1.apple._id, project1.google._id]).toEqual(expect.arrayContaining([0, 1]));
     });
 
     it('increases counter when subdocument is created after main document', () => {
@@ -206,14 +199,8 @@ describe('mongoose-auto-increment plugin', () => {
     let count2;
     let count3;
 
-    beforeAll(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, 'UserNextCount');
-      const User = mongoose.model('UserNextCount', userSchema);
-
+    beforeEach(async () => {
+      const User = getModel('User', { model: 'User' });
       user1 = await new User({ name: 'Charlie', dept: 'Support' });
       count1 = await util.promisify(user1.nextCount)();
       user1 = await user1.save();
@@ -249,14 +236,8 @@ describe('mongoose-auto-increment plugin', () => {
     let count2;
     let reset;
 
-    beforeAll(async () => {
-      const userSchema = new mongoose.Schema({
-        name: String,
-        dept: String,
-      });
-      userSchema.plugin(autoIncrement.plugin, 'UserResetCount');
-      const User = mongoose.model('UserResetCount', userSchema);
-
+    beforeEach(async () => {
+      const User = getModel('User', { model: 'User' });
       user1 = await new User({ name: 'Charlie', dept: 'Support' }).save();
       count1 = await util.promisify(user1.nextCount)();
       reset = await util.promisify(user1.resetCount)();
